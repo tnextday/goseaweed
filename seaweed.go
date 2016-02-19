@@ -18,7 +18,7 @@ type Seaweed struct {
 func NewSeaweed(master string) (sw *Seaweed) {
 	return &Seaweed{
 		Master: master,
-		HC:     NewHttpClient(1024),
+		HC:     NewHttpClient(256),
 	}
 }
 
