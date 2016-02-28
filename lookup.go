@@ -35,10 +35,10 @@ func (ls Locations) PickForRead() *Location {
 	return &ls[rand.Intn(len(ls))]
 }
 
-func (sw *Seaweed) Lookup(vid string) (ret *LookupResult, err error) {
+func (sw *Seaweed) Lookup(vid, collection string) (ret *LookupResult, err error) {
 	locations, cache_err := sw.vc.Get(vid)
 	if cache_err != nil {
-		if ret, err = sw.doLookup(vid); err == nil {
+		if ret, err = sw.doLookup(vid, collection); err == nil {
 			sw.vc.Set(vid, ret.Locations, 10*time.Minute)
 		}
 	} else {
@@ -47,16 +47,19 @@ func (sw *Seaweed) Lookup(vid string) (ret *LookupResult, err error) {
 	return
 }
 
-func (sw *Seaweed) LookupNoCache(vid string) (ret *LookupResult, err error) {
-	if ret, err = sw.doLookup(vid); err == nil {
+func (sw *Seaweed) LookupNoCache(vid, collection string) (ret *LookupResult, err error) {
+	if ret, err = sw.doLookup(vid, collection); err == nil {
 		sw.vc.Set(vid, ret.Locations, 10*time.Minute)
 	}
 	return
 }
 
-func (sw *Seaweed) doLookup(vid string) (*LookupResult, error) {
+func (sw *Seaweed) doLookup(vid, collection string) (*LookupResult, error) {
 	values := make(url.Values)
 	values.Add("volumeId", vid)
+	if collection != "" {
+		values.Set("collection", collection)
+	}
 	jsonBlob, err := sw.HC.Post(sw.Master, "/dir/lookup", values)
 	if err != nil {
 		return nil, err
@@ -72,7 +75,7 @@ func (sw *Seaweed) doLookup(vid string) (*LookupResult, error) {
 	return &ret, nil
 }
 
-func (sw *Seaweed) LookupServerByFid(fileId string, readonly bool) (server string, e error) {
+func (sw *Seaweed) LookupServerByFid(fileId, collection string, readonly bool) (server string, e error) {
 	var parts []string
 	if strings.Contains(fileId, ",") {
 		parts = strings.Split(fileId, ",")
@@ -83,7 +86,7 @@ func (sw *Seaweed) LookupServerByFid(fileId string, readonly bool) (server strin
 	if len(parts) != 2 {
 		return "", errors.New("Invalid fileId " + fileId)
 	}
-	lookup, lookupError := sw.Lookup(parts[0])
+	lookup, lookupError := sw.Lookup(parts[0], collection)
 	if lookupError != nil {
 		return "", lookupError
 	}
@@ -99,8 +102,8 @@ func (sw *Seaweed) LookupServerByFid(fileId string, readonly bool) (server strin
 	return u, nil
 }
 
-func (sw *Seaweed) LookupFileId(fileId string, readonly bool) (fullUrl string, err error) {
-	u, e := sw.LookupServerByFid(fileId, readonly)
+func (sw *Seaweed) LookupFileId(fileId, collection string, readonly bool) (fullUrl string, err error) {
+	u, e := sw.LookupServerByFid(fileId, collection, readonly)
 	if e != nil {
 		return "", e
 	}

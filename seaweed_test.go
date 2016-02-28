@@ -3,15 +3,14 @@ package goseaweed
 import "testing"
 
 const (
-	master    = "192.168.199.2:9333"
-
+	master = "192.168.199.2:9333"
 )
 
 var (
 	weed = NewSeaweed(master)
 )
 
-func TestAssign(t *testing.T)  {
+func TestAssign(t *testing.T) {
 
 }
 
@@ -21,10 +20,10 @@ func TestUploadFile(t *testing.T) {
 		"lookup.go",
 		"test.zip",
 	}
-	weed.ChunkSize = 256*1024
-	for _, f := range testFiles{
-		fid, e := weed.UploadFile(f, "", "");
-		if  e != nil{
+	weed.ChunkSize = 256 * 1024
+	for _, f := range testFiles {
+		fid, e := weed.UploadFile(f, "", "")
+		if e != nil {
 			t.Fatalf("Upload %s error, %v", f, e)
 		}
 		t.Logf("Upload %s -> %s", f, fid)
@@ -44,7 +43,7 @@ func TestBatchUploadFiles(t *testing.T) {
 	}
 
 	for _, r := range rets {
-		if r.Error != ""{
+		if r.Error != "" {
 			t.Fatalf("Upload %s failed, %s", r.FileName, r.Error)
 		}
 		t.Logf("Upload %s -> %s", r.FileName, r.Fid)
@@ -61,7 +60,7 @@ func TestDeleteFiles(t *testing.T) {
 	}
 	for _, fid := range fids {
 		t.Logf("Deleting %s", fid)
-		if e := weed.DeleteFile(fid); e != nil {
+		if e := weed.DeleteFile(fid, ""); e != nil {
 			t.Fatal(e)
 		}
 	}

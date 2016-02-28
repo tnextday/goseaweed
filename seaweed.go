@@ -12,7 +12,7 @@ type Seaweed struct {
 	Master    string
 	HC        *HttpClient
 	ChunkSize int64
-	vc        VidCache 	// caching of volume locations, re-check if after 10 minutes
+	vc        VidCache // caching of volume locations, re-check if after 10 minutes
 }
 
 func NewSeaweed(master string) (sw *Seaweed) {
@@ -84,8 +84,8 @@ func (sw *Seaweed) ReplaceFile(fid, filePath string, deleteFirst bool) error {
 	return e
 }
 
-func (sw *Seaweed) DeleteFile(fileId string) error {
-	fileUrl, err := sw.LookupFileId(fileId, false)
+func (sw *Seaweed) DeleteFile(fileId, collection string) error {
+	fileUrl, err := sw.LookupFileId(fileId, collection, false)
 	if err != nil {
 		return fmt.Errorf("Failed to lookup %s:%v", fileId, err)
 	}

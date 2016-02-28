@@ -58,10 +58,10 @@ func (cm *ChunkManifest) Marshal() ([]byte, error) {
 	return json.Marshal(cm)
 }
 
-func (sw *Seaweed) DeleteChunks(cm *ChunkManifest) error {
+func (sw *Seaweed) DeleteChunks(cm *ChunkManifest, collection string) error {
 	deleteError := 0
 	for _, ci := range cm.Chunks {
-		if e := sw.DeleteFile(ci.Fid); e != nil {
+		if e := sw.DeleteFile(ci.Fid, collection); e != nil {
 			deleteError++
 			//glog.V(0).Infof("Delete %s error: %v, master: %s", ci.Fid, e, master)
 		}

@@ -33,7 +33,7 @@ type SubmitResult struct {
 }
 
 func (sw *Seaweed) BatchUploadFileParts(files []FilePart,
-		collection string, ttl string) ([]SubmitResult, error) {
+	collection string, ttl string) ([]SubmitResult, error) {
 	results := make([]SubmitResult, len(files))
 	for index, file := range files {
 		results[index].FileName = file.FileName
@@ -72,7 +72,7 @@ func (sw *Seaweed) UploadFilePart(fp *FilePart) (fid string, err error) {
 		fp.Server, fp.Fid = ret.Url, ret.Fid
 	}
 	if fp.Server == "" {
-		if fp.Server, err = sw.LookupFileId(fp.Fid, false); err != nil {
+		if fp.Server, err = sw.LookupFileId(fp.Fid, fp.Collection, false); err != nil {
 			return
 		}
 	}
@@ -94,7 +94,7 @@ func (sw *Seaweed) UploadFilePart(fp *FilePart) (fid string, err error) {
 			id, count, e := sw.uploadChunk(fp, baseName+"-"+strconv.FormatInt(i+1, 10))
 			if e != nil {
 				// delete all uploaded chunks
-				sw.DeleteChunks(&cm)
+				sw.DeleteChunks(&cm, fp.Collection)
 				return "", e
 			}
 			cm.Chunks = append(cm.Chunks,
@@ -108,7 +108,7 @@ func (sw *Seaweed) UploadFilePart(fp *FilePart) (fid string, err error) {
 		err = sw.uploadManifest(fp, &cm)
 		if err != nil {
 			// delete all uploaded chunks
-			sw.DeleteChunks(&cm)
+			sw.DeleteChunks(&cm, fp.Collection)
 		}
 	} else {
 		args := url.Values{}
@@ -126,7 +126,7 @@ func (sw *Seaweed) UploadFilePart(fp *FilePart) (fid string, err error) {
 
 func (sw *Seaweed) ReplaceFilePart(fp *FilePart, deleteFirst bool) (fid string, err error) {
 	if deleteFirst && fp.Fid != "" {
-		sw.DeleteFile(fp.Fid)
+		sw.DeleteFile(fp.Fid, fp.Collection)
 	}
 	return sw.UploadFilePart(fp)
 }
