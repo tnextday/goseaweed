@@ -63,7 +63,6 @@ func (hc *HttpClient) PostBytes(url string, body []byte) ([]byte, error) {
 
 func (hc *HttpClient) PostEx(host, path string, values url.Values) (content []byte, statusCode int, e error) {
 	url := MkUrl(host, path, nil)
-	//glog.V(4).Infoln("Post", url+"?"+values.Encode())
 	r, err := hc.Client.PostForm(url, values)
 	if err != nil {
 		return nil, 0, err
@@ -174,21 +173,17 @@ func (hc *HttpClient) uploadContent(uploadUrl string, fillBufferFunction func(w 
 
 	file_writer, cp_err := bodyWriter.CreatePart(h)
 	if cp_err != nil {
-		//glog.V(0).Infoln("error creating form file", cp_err.Error())
 		return nil, cp_err
 	}
 	if err := fillBufferFunction(file_writer); err != nil {
-		//glog.V(0).Infoln("error copying data", err)
 		return nil, err
 	}
 	content_type := bodyWriter.FormDataContentType()
 	if err := bodyWriter.Close(); err != nil {
-		//glog.V(0).Infoln("error closing body", err)
 		return nil, err
 	}
 	resp, post_err := hc.Client.Post(uploadUrl, content_type, body_buf)
 	if post_err != nil {
-		//glog.V(0).Infoln("failing to upload to", uploadUrl, post_err.Error())
 		return nil, post_err
 	}
 	defer resp.Body.Close()
@@ -199,7 +194,6 @@ func (hc *HttpClient) uploadContent(uploadUrl string, fillBufferFunction func(w 
 	var ret UploadResult
 	unmarshal_err := json.Unmarshal(resp_body, &ret)
 	if unmarshal_err != nil {
-		//glog.V(0).Infoln("failing to read upload resonse", uploadUrl, string(resp_body))
 		return nil, unmarshal_err
 	}
 	if ret.Error != "" {

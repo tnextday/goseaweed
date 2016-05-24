@@ -33,9 +33,6 @@ func UnGzipData(input []byte) ([]byte, error) {
 	r, _ := gzip.NewReader(buf)
 	defer r.Close()
 	output, err := ioutil.ReadAll(r)
-	if err != nil {
-		//glog.V(2).Infoln("error uncompressing data:", err)
-	}
 	return output, err
 }
 
@@ -63,7 +60,6 @@ func (sw *Seaweed) DeleteChunks(cm *ChunkManifest, collection string) error {
 	for _, ci := range cm.Chunks {
 		if e := sw.DeleteFile(ci.Fid, collection); e != nil {
 			deleteError++
-			//glog.V(0).Infof("Delete %s error: %v, master: %s", ci.Fid, e, master)
 		}
 	}
 	if deleteError > 0 {

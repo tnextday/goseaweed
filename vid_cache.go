@@ -21,7 +21,6 @@ func (vc *VidCache) Get(vid string) (Locations, error) {
 	defer vc.mutex.RUnlock()
 	id, err := strconv.Atoi(vid)
 	if err != nil {
-		//glog.V(1).Infof("Unknown volume id %s", vid)
 		return nil, err
 	}
 	if 0 < id && id <= len(vc.cache) {
@@ -41,7 +40,6 @@ func (vc *VidCache) Set(vid string, locations Locations, duration time.Duration)
 	defer vc.mutex.Unlock()
 	id, err := strconv.Atoi(vid)
 	if err != nil {
-		//glog.V(1).Infof("Unknown volume id %s", vid)
 		return
 	}
 	if id > len(vc.cache) {

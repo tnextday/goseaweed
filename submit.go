@@ -138,7 +138,6 @@ func (sw *Seaweed) uploadChunk(fp *FilePart, filename string) (fid string, size 
 	}
 
 	fileUrl, fid := MkUrl(ret.Url, ret.Fid, nil), ret.Fid
-	//glog.V(4).Info("Uploading part ", filename, " to ", fileUrl, "...")
 	reader := io.LimitReader(fp.Reader, sw.ChunkSize)
 	uploadResult, uploadError := sw.HC.Upload(fileUrl, filename, reader, false, "application/octet-stream")
 	if uploadError != nil {
@@ -153,7 +152,6 @@ func (sw *Seaweed) uploadManifest(fp *FilePart, manifest *ChunkManifest) error {
 		return e
 	}
 	bufReader := bytes.NewReader(buf)
-	//glog.V(4).Info("Uploading chunks manifest ", manifest.Name, " to ", fileUrl, "...")
 	args := url.Values{}
 	if fp.ModTime != 0 {
 		args.Set("ts", strconv.FormatInt(fp.ModTime, 10))
@@ -167,13 +165,11 @@ func (sw *Seaweed) uploadManifest(fp *FilePart, manifest *ChunkManifest) error {
 func NewFilePart(fullPathFilename string) (ret FilePart, err error) {
 	fh, openErr := os.Open(fullPathFilename)
 	if openErr != nil {
-		//glog.V(0).Info("Failed to open file: ", fullPathFilename)
 		return ret, openErr
 	}
 	ret.Reader = fh
 
 	if fi, fiErr := fh.Stat(); fiErr != nil {
-		//glog.V(0).Info("Failed to stat file:", fullPathFilename)
 		return ret, fiErr
 	} else {
 		ret.ModTime = fi.ModTime().UTC().Unix()
