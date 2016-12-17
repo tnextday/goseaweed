@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"time"
 )
 
 type Seaweed struct {
@@ -18,7 +19,7 @@ type Seaweed struct {
 func NewSeaweed(master string) (sw *Seaweed) {
 	return &Seaweed{
 		Master: master,
-		HC:     NewHttpClient(256),
+		HC:     NewHttpClient(512, 45*time.Second),
 	}
 }
 

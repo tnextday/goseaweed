@@ -14,10 +14,20 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+	"time"
+	"net"
+	"context"
 )
 
 type HttpClient struct {
 	Client *http.Client
+}
+
+// Conn wraps a net.Conn, and sets a deadline for every read
+// and write operation.
+type TimeoutConn struct {
+	net.Conn
+	IdleTimeout time.Duration
 }
 
 type UploadResult struct {
@@ -28,9 +38,54 @@ type UploadResult struct {
 
 var fileNameEscaper = strings.NewReplacer("\\", "\\\\", "\"", "\\\"")
 
-func NewHttpClient(MaxIdleConnsPerHost int) *HttpClient {
+
+func NewTimeoutConn(conn net.Conn, idleTimeout time.Duration) (net.Conn, error) {
+	c := &TimeoutConn{
+		Conn:        conn,
+		IdleTimeout: idleTimeout,
+	}
+	if c.IdleTimeout > 0 {
+		deadline := time.Now().Add(idleTimeout)
+		if e := c.Conn.SetDeadline(deadline); e != nil {
+			return nil, e
+		}
+	}
+	return c, nil
+}
+func (c *TimeoutConn) Read(b []byte) (int, error) {
+	n, e := c.Conn.Read(b)
+	if c.IdleTimeout > 0 && n > 0 && e == nil {
+		err := c.Conn.SetDeadline(time.Now().Add(c.IdleTimeout))
+		if err != nil {
+			return 0, err
+		}
+	}
+	return n, e
+}
+
+func (c *TimeoutConn) Write(b []byte) (int, error) {
+	n, e := c.Conn.Write(b)
+	if c.IdleTimeout > 0 && n > 0 && e == nil {
+		err := c.Conn.SetDeadline(time.Now().Add(c.IdleTimeout))
+		if err != nil {
+			return 0, err
+		}
+	}
+	return n, e
+}
+
+
+func NewHttpClient(MaxIdleConnsPerHost int, timeout time.Duration) *HttpClient {
 	Transport := &http.Transport{
-		MaxIdleConnsPerHost: 1024,
+		MaxIdleConnsPerHost: MaxIdleConnsPerHost,
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			d := net.Dialer{Timeout: timeout}
+			conn, err := d.DialContext(ctx, network, addr)
+			if err != nil {
+				return nil, err
+			}
+			return NewTimeoutConn(conn, timeout)
+		},
 	}
 	c := &http.Client{Transport: Transport}
 	return &HttpClient{Client: c}
@@ -63,6 +118,7 @@ func (hc *HttpClient) PostBytes(url string, body []byte) ([]byte, error) {
 
 func (hc *HttpClient) PostEx(host, path string, values url.Values) (content []byte, statusCode int, e error) {
 	url := MkUrl(host, path, nil)
+	//glog.V(4).Infoln("Post", url+"?"+values.Encode())
 	r, err := hc.Client.PostForm(url, values)
 	if err != nil {
 		return nil, 0, err
@@ -173,17 +229,21 @@ func (hc *HttpClient) uploadContent(uploadUrl string, fillBufferFunction func(w 
 
 	file_writer, cp_err := bodyWriter.CreatePart(h)
 	if cp_err != nil {
+		//glog.V(0).Infoln("error creating form file", cp_err.Error())
 		return nil, cp_err
 	}
 	if err := fillBufferFunction(file_writer); err != nil {
+		//glog.V(0).Infoln("error copying data", err)
 		return nil, err
 	}
 	content_type := bodyWriter.FormDataContentType()
 	if err := bodyWriter.Close(); err != nil {
+		//glog.V(0).Infoln("error closing body", err)
 		return nil, err
 	}
 	resp, post_err := hc.Client.Post(uploadUrl, content_type, body_buf)
 	if post_err != nil {
+		//glog.V(0).Infoln("failing to upload to", uploadUrl, post_err.Error())
 		return nil, post_err
 	}
 	defer resp.Body.Close()
@@ -194,6 +254,7 @@ func (hc *HttpClient) uploadContent(uploadUrl string, fillBufferFunction func(w 
 	var ret UploadResult
 	unmarshal_err := json.Unmarshal(resp_body, &ret)
 	if unmarshal_err != nil {
+		//glog.V(0).Infoln("failing to read upload resonse", uploadUrl, string(resp_body))
 		return nil, unmarshal_err
 	}
 	if ret.Error != "" {
