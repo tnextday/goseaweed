@@ -96,3 +96,35 @@ func (sw *Seaweed) DeleteFile(fileId, collection string) error {
 	}
 	return nil
 }
+
+//Todo: grow volume add by andy
+func (sw *Seaweed) Grow(count int, collection, replication, dataCenter, ttl string) error {
+	args := make(url.Values)
+	if count > 0 {
+		args.Set("count", strconv.Itoa(count))
+	}
+	if collection != "" {
+		args.Set("collection", collection)
+	}
+	if replication != "" {
+		args.Set("replication", replication)
+	}
+	if dataCenter != "" {
+		args.Set("dataCenter", dataCenter)
+	}
+	if ttl != "" {
+		args.Set("ttl", ttl)
+	}
+
+	return sw.GrowArgs(args)
+}
+
+//Todo: grow volume add by andy
+func (sw *Seaweed) GrowArgs(args url.Values) error {
+	_, err := sw.HC.Get(sw.Master, "/vol/grow", args)
+	if err == nil {
+		fmt.Println("grow volume success")
+		return nil
+	}
+	return err
+}
